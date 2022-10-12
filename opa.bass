@@ -1,0 +1,25 @@
+#!/usr/bin/env bass
+(provide [build checkout]
+  (def *memos* *dir*/opa.lock)
+
+  (use (.git (linux/alpine/git)))
+
+  (defn checkout [ref]
+    (git:github/open-policy-agent/opa/ref/ ref))
+
+  (defn build [src]
+    (from (linux/golang)
+      (cd src/
+        ($ go build -o /bin/opa ./))))
+)
+
+
+(defn main [version & args]
+  (let [src (checkout version)
+        opa (build src)]
+    (-> ($ opa)
+        (with-args args)
+        (with-image opa)
+        (read :raw)
+        next)))
+
