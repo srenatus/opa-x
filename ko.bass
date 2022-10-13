@@ -2,6 +2,9 @@
 (provide [oci]
   (use (.git (linux/alpine/git)))
 
+  (def *ko-cache* (cache-dir "ko-cache"))
+  (def *go-cache* (cache-dir "go-cache"))
+
   (defn go-build [src & args]
     (from (linux/golang)
       (cd src
@@ -14,7 +17,11 @@
           out ./oci/]
       (-> (from (linux/golang)
             (cd src
-              ($ ko/ko build --push=false --oci-layout-path (str out) ./)))
+              (-> ($ ko/ko build --push=false --oci-layout-path (str out) ./)
+                  (with-env {:KOCACHE "/ko-cache"
+                             :GOCACHE "/go-cache"})
+                  (with-mount *ko-cache* /ko-cache/)
+                  (with-mount *go-cache* /go-cache/))))
           (subpath out))))
 
   (defn fixup [manifest]
