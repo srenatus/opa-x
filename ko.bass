@@ -7,24 +7,23 @@
           (subpath out))))
 
   (defn fixup [manifest]
-    (merge manifest {:annotations {:org.opencontainers.image.ref.name "latest"}}))
+    (merge manifest {:annotations {:org.opencontainers.image.ref.name "latest"}
+                     :mediaType "application/vnd.oci.image.manifest.v1+json"}))
 
   (defn fixup-annotations [oci-dir]
      (let [index oci-dir/index.json
            manifest (next (read index :json))]
         (dump (merge manifest {:manifests (map fixup (:manifests manifest))}))))
-  
+
   (defn build [src]
     (let [out ./output.tar
           oci-dir (build-oci src)
           new-index (fixup-annotations oci-dir)]
-      (-> (from (linux/alpine)
-            (-> ($ tar cf $out ./)
-                (with-dir ./tmp/)
-                (with-mount oci-dir ./tmp/))
-            (-> ($ tar cf $out ./) ; replacing index.json inplace
-                (with-dir ./tmp/)
-                (with-mount (mkfs ./index.json (json new-index)) ./tmp/index.json)))
+      (-> (from (linux/debian :bullseye-slim)
+            ($ tar cvf $out -C $oci-dir ./oci-layout/ ./blobs/)
+            ($ tar rvf $out  -C (mkfs ./index.json (json new-index)) ./index.json)
+            ($ tar tvf $out)
+            )
           (subpath out))))
 
   (defn oci [src]
