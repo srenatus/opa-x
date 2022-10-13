@@ -15,6 +15,7 @@
     (-> ($ opa)
         (with-args args)
         (with-image opa)
-        (read :json)
-        next)))
-
+        (with-label :at (now 0))
+        (read :raw)
+        next
+        (emit *stdout*))))
