@@ -1,23 +1,13 @@
 #!/usr/bin/env bass
 (provide [oci]
-  (use (.git (linux/alpine/git)))
-
   (def *ko-cache* (cache-dir "ko-cache"))
   (def *go-cache* (cache-dir "go-cache"))
 
-  (defn go-build [src & args]
-    (from (linux/golang)
-      (cd src
-        (-> ($ go build & $args)
-            (with-env {:CGO_ENABLED "0"})))))
-
   (defn build-oci [src]
-    (let [ko-src git:github/ko-build/ko/ref/main/
-          ko (go-build ko-src ./)
-          out ./oci/]
-      (-> (from (linux/golang)
+    (let [out ./oci/]
+      (-> (from (linux/ghcr.io/ko-build/ko)
             (cd src
-              (-> ($ ko/ko build --push=false --oci-layout-path (str out) ./)
+              (-> ($ ko build --push=false --oci-layout-path (str out) ./)
                   (with-env {:KOCACHE "/ko-cache"
                              :GOCACHE "/go-cache"})
                   (with-mount *ko-cache* /ko-cache/)
