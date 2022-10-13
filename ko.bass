@@ -26,7 +26,7 @@
     (let [out ./output.tar
           oci-dir (build-oci src)
           new-index (fixup-annotations oci-dir)]
-      (-> (from (linux/debian :bullseye-slim)
+      (-> (from (linux/ghcr.io/ko-build/ko) ; avoid fetching another image, this one has GNU tar, too
             ($ tar cvf $out -C $oci-dir ./oci-layout/ ./blobs/)
             ($ tar rvf $out  -C (mkfs ./index.json (json new-index)) ./index.json))
           (subpath out))))

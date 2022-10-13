@@ -1,7 +1,7 @@
 #!/usr/bin/env bass
 (provide [build checkout]
   (def *memos* *dir*/opa.lock)
-  (use (.git (linux/alpine/git))
+  (use (.git (linux/ghcr.io/ko-build/ko))
        (*dir*/ko.bass))
 
   (defn checkout [ref]
