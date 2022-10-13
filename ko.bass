@@ -1,19 +1,29 @@
 #!/usr/bin/env bass
-(provide [oci build-oci fixup-annotations]
+(provide [oci]
+  (use (.git (linux/alpine/git)))
+
+  (defn go-build [src & args]
+    (from (linux/golang)
+      (cd src
+        (-> ($ go build & $args)
+            (with-env {:CGO_ENABLED "0"})))))
+
   (defn build-oci [src]
-    (let [out ./oci/]
-      (-> (cd src ($ ko build --push=false --oci-layout-path (str out) "."))
-          (with-image (linux/distroless.dev/ko))
+    (let [ko-src git:github/ko-build/ko/ref/main/
+          ko (go-build ko-src ./)
+          out ./oci/]
+      (-> (from (linux/golang)
+            (cd src
+              ($ ko/ko build --push=false --oci-layout-path (str out) ./)))
           (subpath out))))
 
   (defn fixup [manifest]
-    (merge manifest {:annotations {:org.opencontainers.image.ref.name "latest"}
-                     :mediaType "application/vnd.oci.image.manifest.v1+json"}))
+    (merge manifest {:annotations {:org.opencontainers.image.ref.name "latest"}}))
 
   (defn fixup-annotations [oci-dir]
      (let [index oci-dir/index.json
            manifest (next (read index :json))]
-        (dump (merge manifest {:manifests (map fixup (:manifests manifest))}))))
+        (merge manifest {:manifests (map fixup (:manifests manifest))})))
 
   (defn build [src]
     (let [out ./output.tar
@@ -21,9 +31,7 @@
           new-index (fixup-annotations oci-dir)]
       (-> (from (linux/debian :bullseye-slim)
             ($ tar cvf $out -C $oci-dir ./oci-layout/ ./blobs/)
-            ($ tar rvf $out  -C (mkfs ./index.json (json new-index)) ./index.json)
-            ($ tar tvf $out)
-            )
+            ($ tar rvf $out  -C (mkfs ./index.json (json new-index)) ./index.json))
           (subpath out))))
 
   (defn oci [src]

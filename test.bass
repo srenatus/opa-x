@@ -1,6 +1,3 @@
 (use (*dir*/ko.bass) (*dir*/opa.bass))
-
-;(defn main [] (-> (opa:checkout "v0.45.0") (ko:build-oci) (ko:fixup-annotations) (emit *stdout*)))
 (def img (-> (opa:checkout "v0.45.0") (ko:oci)))
 (defn main [] (run (from img ($ opa version))))
-;(defn main [] (emit img *stdout*))
